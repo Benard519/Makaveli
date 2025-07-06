@@ -6,7 +6,6 @@ import {
   ShoppingCart, 
   TrendingUp, 
   LogOut, 
-  Wheat,
   Menu,
   X,
   Bell,
@@ -41,8 +40,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="lg:hidden bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/20">
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center">
-            <div className="h-10 w-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mr-3 shadow-lg">
-              <Wheat className="h-6 w-6 text-white" />
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center mr-3 shadow-lg overflow-hidden">
+              <img 
+                src="/WhatsApp Image 2025-07-06 at 11.37.25 PM.jpeg" 
+                alt="Himazake Enterprise Logo" 
+                className="h-full w-full object-cover"
+              />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-green-800 bg-clip-text text-transparent">
               MaizeBiz
@@ -105,14 +108,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0">
           <div className="flex flex-col flex-grow bg-white/80 backdrop-blur-xl shadow-2xl border-r border-white/20">
             <div className="flex items-center flex-shrink-0 px-6 py-6 border-b border-gray-100">
-              <div className="h-12 w-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mr-4 shadow-xl">
-                <Wheat className="h-7 w-7 text-white" />
+              <div className="h-12 w-12 rounded-2xl flex items-center justify-center mr-4 shadow-xl overflow-hidden">
+                <img 
+                  src="/WhatsApp Image 2025-07-06 at 11.37.25 PM.jpeg" 
+                  alt="Himazake Enterprise Logo" 
+                  className="h-full w-full object-cover"
+                />
               </div>
               <div>
                 <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-green-800 bg-clip-text text-transparent">
                   HIMAZAKE
                 </span>
-                <p className="text-xs text-gray-500 font-medium">Inspiring agriculture</p>
+                <p className="text-xs text-gray-500 font-medium">Inspiring Agriculture</p>
               </div>
             </div>
             
