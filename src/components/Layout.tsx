@@ -110,7 +110,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
               <div>
                 <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-green-800 bg-clip-text text-transparent">
-                  MaizeBiz Tracker
+                  HIMAZAKE
                 </span>
                 <p className="text-xs text-gray-500 font-medium">Premium Edition</p>
               </div>
