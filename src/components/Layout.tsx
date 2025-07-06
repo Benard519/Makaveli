@@ -45,7 +45,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Wheat className="h-6 w-6 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-green-800 bg-clip-text text-transparent">
-              Makaveli
+              MaizeBiz
             </span>
           </div>
           <div className="flex items-center space-x-2">
