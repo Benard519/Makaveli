@@ -112,7 +112,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-green-800 bg-clip-text text-transparent">
                   HIMAZAKE
                 </span>
-                <p className="text-xs text-gray-500 font-medium">Premium Edition</p>
+                <p className="text-xs text-gray-500 font-medium">Inspiring agriculture</p>
               </div>
             </div>
             
