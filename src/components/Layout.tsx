@@ -9,7 +9,6 @@ import {
   Menu,
   X,
   Bell,
-  Settings,
   User
 } from 'lucide-react';
 
@@ -164,10 +163,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
                 
                 <div className="space-y-2">
-                  <button className="w-full group flex items-center px-4 py-3 text-sm font-medium rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all duration-200">
-                    <Settings className="mr-3 h-4 w-4" />
-                    Settings
-                  </button>
                   <button
                     onClick={handleSignOut}
                     className="w-full group flex items-center px-4 py-3 text-sm font-medium rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200"

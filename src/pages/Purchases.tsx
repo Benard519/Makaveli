@@ -3,13 +3,14 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import PurchaseForm from '../components/PurchaseForm';
 import { format } from 'date-fns';
-import { Plus, Search, Calendar, DollarSign, Truck, Weight, Package } from 'lucide-react';
+import { Plus, Search, Calendar, DollarSign, Truck, Weight, Package, Edit, Trash2, MapPin } from 'lucide-react';
 
 export default function Purchases() {
   const { user } = useAuth();
   const [purchases, setPurchases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingPurchase, setEditingPurchase] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -35,10 +36,48 @@ export default function Purchases() {
     }
   };
 
+  const handleEdit = (purchase: any) => {
+    setEditingPurchase(purchase);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (purchaseId: string) => {
+    if (!confirm('Are you sure you want to delete this purchase? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('purchases')
+        .delete()
+        .eq('id', purchaseId);
+
+      if (error) throw error;
+      
+      fetchPurchases();
+      alert('Purchase deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting purchase:', error);
+      alert('Error deleting purchase. Please try again.');
+    }
+  };
+
+  const handleFormSuccess = () => {
+    fetchPurchases();
+    setShowForm(false);
+    setEditingPurchase(null);
+  };
+
+  const handleFormCancel = () => {
+    setShowForm(false);
+    setEditingPurchase(null);
+  };
+
   const filteredPurchases = purchases.filter(purchase =>
     purchase.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     purchase.payment_method.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (purchase.truck_number_plate && purchase.truck_number_plate.toLowerCase().includes(searchTerm.toLowerCase()))
+    (purchase.truck_number_plate && purchase.truck_number_plate.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (purchase.location_of_origin && purchase.location_of_origin.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const totalPurchases = purchases.reduce((sum, p) => sum + p.total_amount_paid, 0);
@@ -67,7 +106,10 @@ export default function Purchases() {
           <p className="text-gray-600 mt-1">Manage your maize purchase records</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            setEditingPurchase(null);
+            setShowForm(!showForm);
+          }}
           className="mt-4 sm:mt-0 inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-300 transform hover:scale-105 shadow-lg"
         >
           <Plus className="h-5 w-5 mr-2" />
@@ -76,15 +118,15 @@ export default function Purchases() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-6 border border-white/20 card-hover">
           <div className="flex items-center">
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-2xl shadow-lg">
               <DollarSign className="h-6 w-6 text-white" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-semibold text-gray-500">Total Purchases</p>
-              <p className="text-2xl font-bold text-gray-900">KES {totalPurchases.toLocaleString()}</p>
+            <div className="ml-4 min-w-0 flex-1">
+              <p className="text-xs lg:text-sm font-semibold text-gray-500 truncate">Total Purchases</p>
+              <p className="text-lg lg:text-xl font-bold text-gray-900 break-words">KES {totalPurchases.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -94,9 +136,9 @@ export default function Purchases() {
             <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-2xl shadow-lg">
               <Weight className="h-6 w-6 text-white" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-semibold text-gray-500">Total Quantity</p>
-              <p className="text-2xl font-bold text-gray-900">{totalQuantity.toLocaleString()} kg</p>
+            <div className="ml-4 min-w-0 flex-1">
+              <p className="text-xs lg:text-sm font-semibold text-gray-500 truncate">Total Quantity</p>
+              <p className="text-lg lg:text-xl font-bold text-gray-900 break-words">{totalQuantity.toLocaleString()} kg</p>
             </div>
           </div>
         </div>
@@ -106,9 +148,9 @@ export default function Purchases() {
             <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-4 rounded-2xl shadow-lg">
               <Calendar className="h-6 w-6 text-white" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-semibold text-gray-500">Total Records</p>
-              <p className="text-2xl font-bold text-gray-900">{purchases.length}</p>
+            <div className="ml-4 min-w-0 flex-1">
+              <p className="text-xs lg:text-sm font-semibold text-gray-500 truncate">Total Records</p>
+              <p className="text-lg lg:text-xl font-bold text-gray-900 break-words">{purchases.length}</p>
             </div>
           </div>
         </div>
@@ -118,10 +160,9 @@ export default function Purchases() {
       {showForm && (
         <div className="animate-fadeIn">
           <PurchaseForm
-            onSuccess={() => {
-              fetchPurchases();
-              setShowForm(false);
-            }}
+            editData={editingPurchase}
+            onSuccess={handleFormSuccess}
+            onCancel={handleFormCancel}
           />
         </div>
       )}
@@ -132,7 +173,7 @@ export default function Purchases() {
           <Search className="h-5 w-5 absolute left-4 top-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search purchases by supplier name, payment method, or truck number..."
+            placeholder="Search purchases by supplier name, payment method, truck number, or location..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur-sm"
@@ -166,6 +207,9 @@ export default function Purchases() {
                     Supplier
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                    Location
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Quantity
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
@@ -183,6 +227,9 @@ export default function Purchases() {
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Weights
                   </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
@@ -193,6 +240,18 @@ export default function Purchases() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                       {purchase.supplier_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {purchase.location_of_origin ? (
+                        <div className="flex items-center">
+                          <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+                          <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                            {purchase.location_of_origin}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {purchase.quantity_bought.toLocaleString()} kg
@@ -243,6 +302,24 @@ export default function Purchases() {
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEdit(purchase)}
+                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                          title="Edit purchase"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(purchase.id)}
+                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200"
+                          title="Delete purchase"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

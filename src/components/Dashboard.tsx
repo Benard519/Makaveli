@@ -249,16 +249,16 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {statCards.map((card, index) => {
           const Icon = card.icon;
           return (
             <div 
               key={card.title} 
-              className={`bg-gradient-to-br ${card.bgGradient} rounded-3xl shadow-xl border border-white/20 p-6 transform hover:scale-105 transition-all duration-300 hover:shadow-2xl`}
+              className={`bg-gradient-to-br ${card.bgGradient} rounded-3xl shadow-xl border border-white/20 p-4 lg:p-6 transform hover:scale-105 transition-all duration-300 hover:shadow-2xl min-w-0`}
               style={{ animationDelay: `${index * 100}ms` }}
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3 lg:mb-4">
                 <div className={`bg-gradient-to-r ${card.gradient} p-4 rounded-2xl shadow-lg`}>
                   <Icon className="h-6 w-6 text-white" />
                 </div>
@@ -271,13 +271,13 @@ export default function Dashboard() {
                 </div>
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-600 mb-1">{card.title}</p>
-                <p className="text-2xl font-bold text-gray-900 mb-3">{card.value}</p>
-                <div className="flex items-center text-sm">
-                  <span className={`font-semibold ${card.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                <p className="text-xs lg:text-sm font-semibold text-gray-600 mb-1 truncate">{card.title}</p>
+                <p className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3 break-words" title={card.value}>{card.value}</p>
+                <div className="flex items-center text-xs lg:text-sm min-w-0">
+                  <span className={`font-semibold ${card.trend === 'up' ? 'text-green-600' : 'text-red-600'} truncate flex-shrink-0`}>
                     {card.change}
                   </span>
-                  <span className="text-gray-500 ml-2">{card.changeLabel}</span>
+                  <span className="text-gray-500 ml-1 lg:ml-2 truncate">{card.changeLabel}</span>
                 </div>
               </div>
             </div>
@@ -302,7 +302,7 @@ export default function Dashboard() {
                 </div>
                 <span className="font-semibold text-gray-700">Purchases</span>
               </div>
-              <span className="text-lg font-bold text-gray-900">
+              <span className="text-lg font-bold text-gray-900 truncate">
                 KES {stats.todayPurchases.toLocaleString()}
               </span>
             </div>
@@ -313,14 +313,14 @@ export default function Dashboard() {
                 </div>
                 <span className="font-semibold text-gray-700">Sales</span>
               </div>
-              <span className="text-lg font-bold text-gray-900">
+              <span className="text-lg font-bold text-gray-900 truncate">
                 KES {stats.todaySales.toLocaleString()}
               </span>
             </div>
             <div className="border-t pt-4">
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl">
                 <span className="font-bold text-gray-900">Net Today</span>
-                <span className={`text-lg font-bold ${
+                <span className={`text-lg font-bold truncate ${
                   (stats.todaySales - stats.todayPurchases) >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
                   KES {(stats.todaySales - stats.todayPurchases).toLocaleString()}

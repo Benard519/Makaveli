@@ -5,7 +5,7 @@ import * as yup from 'yup';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
-import { CheckCircle, Download, Share2, MessageCircle, Mail, Truck, Weight } from 'lucide-react';
+import { CheckCircle, Download, Share2, MessageCircle, Mail, Truck, Weight, MapPin } from 'lucide-react';
 
 const schema = yup.object({
   supplier_name: yup.string().required('Supplier name is required'),
@@ -16,15 +16,18 @@ const schema = yup.object({
   truck_number_plate: yup.string(),
   origin_weight: yup.number().positive('Weight must be positive'),
   destination_weight: yup.number().positive('Weight must be positive'),
+  location_of_origin: yup.string(),
 });
 
 type PurchaseFormData = yup.InferType<typeof schema>;
 
 interface PurchaseFormProps {
   onSuccess?: () => void;
+  editData?: any;
+  onCancel?: () => void;
 }
 
-export default function PurchaseForm({ onSuccess }: PurchaseFormProps) {
+export default function PurchaseForm({ onSuccess, editData, onCancel }: PurchaseFormProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -38,7 +41,17 @@ export default function PurchaseForm({ onSuccess }: PurchaseFormProps) {
     reset,
   } = useForm<PurchaseFormData>({
     resolver: yupResolver(schema),
-    defaultValues: {
+    defaultValues: editData ? {
+      supplier_name: editData.supplier_name,
+      date_of_purchase: editData.date_of_purchase,
+      quantity_bought: editData.quantity_bought,
+      price_per_unit: editData.price_per_unit,
+      payment_method: editData.payment_method,
+      truck_number_plate: editData.truck_number_plate || '',
+      origin_weight: editData.origin_weight || '',
+      destination_weight: editData.destination_weight || '',
+      location_of_origin: editData.location_of_origin || '',
+    } : {
       date_of_purchase: format(new Date(), 'yyyy-MM-dd'),
     },
   });
@@ -58,21 +71,35 @@ export default function PurchaseForm({ onSuccess }: PurchaseFormProps) {
         user_id: user.id,
       };
 
-      const { data: result, error } = await supabase
-        .from('purchases')
-        .insert([purchaseData])
-        .select()
-        .single();
+      let result;
+      if (editData) {
+        const { data: updateResult, error } = await supabase
+          .from('purchases')
+          .update(purchaseData)
+          .eq('id', editData.id)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        result = updateResult;
+      } else {
+        const { data: insertResult, error } = await supabase
+          .from('purchases')
+          .insert([purchaseData])
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
+        result = insertResult;
+      }
 
       setLastPurchase(result);
       setShowReceipt(true);
       reset();
       onSuccess?.();
     } catch (error) {
-      console.error('Error adding purchase:', error);
-      alert('Error adding purchase. Please try again.');
+      console.error('Error saving purchase:', error);
+      alert('Error saving purchase. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -90,6 +117,7 @@ Receipt #: ${lastPurchase.id.substring(0, 8)}
 
 SUPPLIER DETAILS:
 Name: ${lastPurchase.supplier_name}
+${lastPurchase.location_of_origin ? `Location: ${lastPurchase.location_of_origin}` : ''}
 
 PURCHASE DETAILS:
 Quantity: ${lastPurchase.quantity_bought} kg
@@ -118,7 +146,7 @@ Generated on: ${format(new Date(), 'PPpp')}
   const shareReceipt = (method: 'whatsapp' | 'email' | 'sms') => {
     if (!lastPurchase) return;
 
-    const message = `MaizeBiz Purchase Receipt\n\nDate: ${format(new Date(lastPurchase.date_of_purchase), 'PPP')}\nSupplier: ${lastPurchase.supplier_name}\nQuantity: ${lastPurchase.quantity_bought} kg\nTotal: KES ${lastPurchase.total_amount_paid}\nPayment: ${lastPurchase.payment_method}${lastPurchase.truck_number_plate ? `\nTruck: ${lastPurchase.truck_number_plate}` : ''}`;
+    const message = `MaizeBiz Purchase Receipt\n\nDate: ${format(new Date(lastPurchase.date_of_purchase), 'PPP')}\nSupplier: ${lastPurchase.supplier_name}${lastPurchase.location_of_origin ? `\nLocation: ${lastPurchase.location_of_origin}` : ''}\nQuantity: ${lastPurchase.quantity_bought} kg\nTotal: KES ${lastPurchase.total_amount_paid}\nPayment: ${lastPurchase.payment_method}${lastPurchase.truck_number_plate ? `\nTruck: ${lastPurchase.truck_number_plate}` : ''}`;
 
     switch (method) {
       case 'whatsapp':
@@ -141,7 +169,7 @@ Generated on: ${format(new Date(), 'PPpp')}
             <CheckCircle className="h-8 w-8 text-white" />
           </div>
           <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-green-800 bg-clip-text text-transparent">
-            Purchase Recorded Successfully!
+            Purchase {editData ? 'Updated' : 'Recorded'} Successfully!
           </h3>
           <p className="text-gray-600 mt-2">Your receipt has been generated and is ready to share</p>
         </div>
@@ -154,6 +182,9 @@ Generated on: ${format(new Date(), 'PPpp')}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="space-y-2">
               <p><span className="font-semibold text-gray-700">Supplier:</span> <span className="text-gray-900">{lastPurchase?.supplier_name}</span></p>
+              {lastPurchase?.location_of_origin && (
+                <p className="flex items-center"><span className="font-semibold text-gray-700">Location:</span> <MapPin className="h-4 w-4 mx-2 text-gray-500" /> <span className="text-gray-900">{lastPurchase?.location_of_origin}</span></p>
+              )}
               <p><span className="font-semibold text-gray-700">Date:</span> <span className="text-gray-900">{format(new Date(lastPurchase?.date_of_purchase), 'PPP')}</span></p>
               <p><span className="font-semibold text-gray-700">Quantity:</span> <span className="text-gray-900">{lastPurchase?.quantity_bought} kg</span></p>
               <p><span className="font-semibold text-gray-700">Price per unit:</span> <span className="text-gray-900">KES {lastPurchase?.price_per_unit}</span></p>
@@ -206,7 +237,7 @@ Generated on: ${format(new Date(), 'PPpp')}
             onClick={() => setShowReceipt(false)}
             className="text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200 hover:underline"
           >
-            Add Another Purchase
+            {editData ? 'Close' : 'Add Another Purchase'}
           </button>
         </div>
       </div>
@@ -215,16 +246,26 @@ Generated on: ${format(new Date(), 'PPpp')}
 
   return (
     <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
-      <div className="flex items-center mb-8">
-        <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg">
-          <Truck className="h-6 w-6 text-white" />
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center">
+          <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg">
+            <Truck className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
+              {editData ? 'Edit Purchase' : 'Record Purchase'}
+            </h2>
+            <p className="text-gray-600">{editData ? 'Update purchase details' : 'Add a new purchase to your inventory'}</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 bg-clip-text text-transparent">
-            Record Purchase
-          </h2>
-          <p className="text-gray-600">Add a new purchase to your inventory</p>
-        </div>
+        {editData && onCancel && (
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200"
+          >
+            Cancel
+          </button>
+        )}
       </div>
       
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -241,6 +282,21 @@ Generated on: ${format(new Date(), 'PPpp')}
             />
             {errors.supplier_name && (
               <p className="mt-2 text-sm text-red-600 font-medium">{errors.supplier_name.message}</p>
+            )}
+          </div>
+
+          <div className="group">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Location of Origin
+            </label>
+            <input
+              type="text"
+              {...register('location_of_origin')}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-blue-300"
+              placeholder="Enter location of origin (optional)"
+            />
+            {errors.location_of_origin && (
+              <p className="mt-2 text-sm text-red-600 font-medium">{errors.location_of_origin.message}</p>
             )}
           </div>
 
@@ -301,7 +357,7 @@ Generated on: ${format(new Date(), 'PPpp')}
               <option value="">Select payment method</option>
               <option value="Cash">Cash</option>
               <option value="M-Pesa">M-Pesa</option>
-              <option value="Bank">Bank Transfer</option>
+              <option value="Bank Transfer">Bank Transfer</option>
             </select>
             {errors.payment_method && (
               <p className="mt-2 text-sm text-red-600 font-medium">{errors.payment_method.message}</p>
@@ -374,10 +430,10 @@ Generated on: ${format(new Date(), 'PPpp')}
             {loading ? (
               <div className="flex items-center space-x-2">
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Recording...</span>
+                <span>{editData ? 'Updating...' : 'Recording...'}</span>
               </div>
             ) : (
-              'Record Purchase'
+              editData ? 'Update Purchase' : 'Record Purchase'
             )}
           </button>
         </div>
