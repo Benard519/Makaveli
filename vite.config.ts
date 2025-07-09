@@ -8,6 +8,8 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -22,9 +24,9 @@ export default defineConfig({
     }
   },
   server: {
-    historyApiFallback: true
+    open: true
   },
   preview: {
-    historyApiFallback: true
+    open: true
   }
 });
