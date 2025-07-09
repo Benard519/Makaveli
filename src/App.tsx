@@ -29,6 +29,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </div>
+        <div className="absolute bottom-8 text-center w-full">
+          <p className="text-gray-600 text-sm">Loading HIMAZAKE...</p>
+        </div>
       </div>
     );
   }
@@ -60,6 +63,9 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
               />
             </div>
           </div>
+        </div>
+        <div className="absolute bottom-8 text-center w-full">
+          <p className="text-gray-600 text-sm">Loading HIMAZAKE...</p>
         </div>
       </div>
     );
@@ -117,7 +123,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <Navigate to="/dashboard" replace />
+              </ProtectedRoute>
+            } 
+          />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
