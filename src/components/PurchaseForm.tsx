@@ -9,6 +9,7 @@ import { CheckCircle, Download, Share2, MessageCircle, Mail, Truck, Weight, MapP
 
 const schema = yup.object({
   supplier_name: yup.string().required('Supplier name is required'),
+  location_of_origin: yup.string(),
   date_of_purchase: yup.string().required('Date is required'),
   quantity_bought: yup.number().positive('Quantity must be positive').required('Quantity is required'),
   price_per_unit: yup.number().positive('Price must be positive').required('Price per unit is required'),
@@ -16,7 +17,6 @@ const schema = yup.object({
   truck_number_plate: yup.string(),
   origin_weight: yup.number().positive('Weight must be positive'),
   destination_weight: yup.number().positive('Weight must be positive'),
-  location_of_origin: yup.string(),
 });
 
 type PurchaseFormData = yup.InferType<typeof schema>;
@@ -53,6 +53,7 @@ export default function PurchaseForm({ onSuccess, editData, onCancel }: Purchase
       location_of_origin: editData.location_of_origin || '',
     } : {
       date_of_purchase: format(new Date(), 'yyyy-MM-dd'),
+      location_of_origin: '',
     },
   });
 
@@ -65,17 +66,27 @@ export default function PurchaseForm({ onSuccess, editData, onCancel }: Purchase
 
     setLoading(true);
     try {
-      const purchaseData = {
-        ...data,
+      // Ensure all required fields are properly formatted
+      const cleanedData = {
+        supplier_name: data.supplier_name?.trim() || '',
+        location_of_origin: data.location_of_origin?.trim() || null,
+        date_of_purchase: data.date_of_purchase || format(new Date(), 'yyyy-MM-dd'),
+        quantity_bought: Number(data.quantity_bought) || 0,
+        price_per_unit: Number(data.price_per_unit) || 0,
+        payment_method: data.payment_method?.trim() || '',
+        truck_number_plate: data.truck_number_plate?.trim() || null,
+        origin_weight: data.origin_weight ? Number(data.origin_weight) : null,
+        destination_weight: data.destination_weight ? Number(data.destination_weight) : null,
         total_amount_paid: totalAmount,
         user_id: user.id,
       };
+
 
       let result;
       if (editData) {
         const { data: updateResult, error } = await supabase
           .from('purchases')
-          .update(purchaseData)
+          .update(cleanedData)
           .eq('id', editData.id)
           .select()
           .single();
@@ -85,7 +96,7 @@ export default function PurchaseForm({ onSuccess, editData, onCancel }: Purchase
       } else {
         const { data: insertResult, error } = await supabase
           .from('purchases')
-          .insert([purchaseData])
+          .insert([cleanedData])
           .select()
           .single();
 
@@ -95,11 +106,37 @@ export default function PurchaseForm({ onSuccess, editData, onCancel }: Purchase
 
       setLastPurchase(result);
       setShowReceipt(true);
-      reset();
+      if (!editData) {
+        reset({
+          date_of_purchase: format(new Date(), 'yyyy-MM-dd'),
+          supplier_name: '',
+          location_of_origin: '',
+          quantity_bought: 0,
+          price_per_unit: 0,
+          payment_method: '',
+          truck_number_plate: '',
+          origin_weight: undefined,
+          destination_weight: undefined,
+        });
+      }
       onSuccess?.();
     } catch (error) {
       console.error('Error saving purchase:', error);
-      alert('Error saving purchase. Please try again.');
+      console.error('Full error object:', error);
+      
+      let errorMessage = 'Error saving purchase. Please try again.';
+      
+      if (error && typeof error === 'object') {
+        if ('message' in error) {
+          errorMessage = error.message;
+        } else if ('error' in error && error.error) {
+          errorMessage = error.error.message || error.error;
+        } else if ('details' in error) {
+          errorMessage = error.details;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -291,7 +328,9 @@ Generated on: ${format(new Date(), 'PPpp')}
             </label>
             <input
               type="text"
-              {...register('location_of_origin')}
+              {...register('location_of_origin', {
+                setValueAs: (value) => value || ''
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-blue-300"
               placeholder="Enter location of origin (optional)"
             />
@@ -316,14 +355,16 @@ Generated on: ${format(new Date(), 'PPpp')}
 
           <div className="group">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Quantity Bought (kg)
+              Number of Bags
             </label>
             <input
               type="number"
               step="0.01"
-              {...register('quantity_bought')}
+              {...register('quantity_bought', {
+                setValueAs: (value) => value ? parseFloat(value) : 0
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-blue-300"
-              placeholder="Enter quantity"
+              placeholder="Enter number of bags"
             />
             {errors.quantity_bought && (
               <p className="mt-2 text-sm text-red-600 font-medium">{errors.quantity_bought.message}</p>
@@ -332,14 +373,16 @@ Generated on: ${format(new Date(), 'PPpp')}
 
           <div className="group">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Price per Unit (KES)
+              Price per Bag (KES)
             </label>
             <input
               type="number"
               step="0.01"
-              {...register('price_per_unit')}
+              {...register('price_per_unit', {
+                setValueAs: (value) => value ? parseFloat(value) : 0
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-blue-300"
-              placeholder="Enter price per unit"
+              placeholder="Enter price per bag"
             />
             {errors.price_per_unit && (
               <p className="mt-2 text-sm text-red-600 font-medium">{errors.price_per_unit.message}</p>
@@ -351,7 +394,9 @@ Generated on: ${format(new Date(), 'PPpp')}
               Payment Method
             </label>
             <select
-              {...register('payment_method')}
+              {...register('payment_method', {
+                setValueAs: (value) => value || ''
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-blue-300"
             >
               <option value="">Select payment method</option>
@@ -370,7 +415,9 @@ Generated on: ${format(new Date(), 'PPpp')}
             </label>
             <input
               type="text"
-              {...register('truck_number_plate')}
+              {...register('truck_number_plate', {
+                setValueAs: (value) => value || ''
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-blue-300"
               placeholder="Enter truck number plate (optional)"
             />
@@ -386,7 +433,9 @@ Generated on: ${format(new Date(), 'PPpp')}
             <input
               type="number"
               step="0.01"
-              {...register('origin_weight')}
+              {...register('origin_weight', {
+                setValueAs: (value) => value ? parseFloat(value) : undefined
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-blue-300"
               placeholder="Enter origin weight (optional)"
             />
@@ -402,7 +451,9 @@ Generated on: ${format(new Date(), 'PPpp')}
             <input
               type="number"
               step="0.01"
-              {...register('destination_weight')}
+              {...register('destination_weight', {
+                setValueAs: (value) => value ? parseFloat(value) : undefined
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-blue-300"
               placeholder="Enter destination weight (optional)"
             />
@@ -416,7 +467,7 @@ Generated on: ${format(new Date(), 'PPpp')}
               Total Amount (KES)
             </label>
             <div className="w-full px-4 py-3 border-2 border-green-200 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 text-green-800 font-bold text-lg">
-              {totalAmount.toLocaleString()}
+              KES {totalAmount.toLocaleString()}
             </div>
           </div>
         </div>

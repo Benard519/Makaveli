@@ -173,7 +173,7 @@ export default function Purchases() {
           <Search className="h-5 w-5 absolute left-4 top-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search purchases by supplier name, payment method, truck number, or location..."
+            placeholder="Search purchases by supplier name, payment method, or truck number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur-sm"
@@ -210,10 +210,10 @@ export default function Purchases() {
                     Location
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Quantity
+                    Number of Bags
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Price/Unit
+                    Price/Bag
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Total
@@ -254,7 +254,7 @@ export default function Purchases() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {purchase.quantity_bought.toLocaleString()} kg
+                      {purchase.quantity_bought.toLocaleString()} bags
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       KES {purchase.price_per_unit.toLocaleString()}

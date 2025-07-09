@@ -31,6 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Dashboard', href: '/dashboard', icon: Home, color: 'from-blue-500 to-blue-600' },
     { name: 'Purchases', href: '/purchases', icon: ShoppingCart, color: 'from-purple-500 to-purple-600' },
     { name: 'Sales', href: '/sales', icon: TrendingUp, color: 'from-green-500 to-green-600' },
+    { name: 'Laborers', href: '/laborers', icon: User, color: 'from-orange-500 to-orange-600' },
   ];
 
   return (
@@ -39,11 +40,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="lg:hidden bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/20">
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center">
-            <div className="h-10 w-10 rounded-xl flex items-center justify-center mr-3 shadow-lg overflow-hidden">
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center mr-3 shadow-lg overflow-hidden bg-white">
               <img 
                 src="/WhatsApp Image 2025-07-06 at 11.37.25 PM.jpeg" 
                 alt="Himazake Enterprise Logo" 
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover rounded-xl"
+                onError={(e) => {
+                  console.log('Logo failed to load');
+                  e.currentTarget.style.display = 'none';
+                }}
               />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-green-800 bg-clip-text text-transparent">
@@ -107,11 +112,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="hidden lg:flex lg:flex-col lg:w-72 lg:fixed lg:inset-y-0">
           <div className="flex flex-col flex-grow bg-white/80 backdrop-blur-xl shadow-2xl border-r border-white/20">
             <div className="flex items-center flex-shrink-0 px-6 py-6 border-b border-gray-100">
-              <div className="h-12 w-12 rounded-2xl flex items-center justify-center mr-4 shadow-xl overflow-hidden">
+              <div className="h-12 w-12 rounded-2xl flex items-center justify-center mr-4 shadow-xl overflow-hidden bg-white">
                 <img 
                   src="/WhatsApp Image 2025-07-06 at 11.37.25 PM.jpeg" 
                   alt="Himazake Enterprise Logo" 
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover rounded-2xl"
+                  onError={(e) => {
+                    console.log('Logo failed to load');
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               </div>
               <div>

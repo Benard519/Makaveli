@@ -6,6 +6,7 @@ import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
 import Purchases from './pages/Purchases';
 import Sales from './pages/Sales';
+import Laborers from './pages/Laborers';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -77,6 +78,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Sales />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/laborers"
+            element={
+              <ProtectedRoute>
+                <Laborers />
               </ProtectedRoute>
             }
           />

@@ -46,11 +46,15 @@ export default function LoginForm() {
         <div className="text-center">
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="h-20 w-20 rounded-2xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden">
+              <div className="h-20 w-20 rounded-2xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden bg-white">
                 <img 
                   src="/WhatsApp Image 2025-07-06 at 11.37.25 PM.jpeg" 
                   alt="Himazake Enterprise Logo" 
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover rounded-2xl"
+                  onError={(e) => {
+                    console.log('Logo failed to load');
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               </div>
               <div className="absolute -top-1 -right-1 h-6 w-6 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center animate-bounce">

@@ -12,12 +12,12 @@ const schema = yup.object({
   driver_phone: yup.string().required('Driver phone is required'),
   date_of_sale: yup.string().required('Date is required'),
   quantity_sold: yup.number().positive('Quantity must be positive').required('Quantity is required'),
-  number_of_bags: yup.number().positive('Number of bags must be positive'),
+  number_of_bags: yup.number().positive('Number of bags must be positive').required('Number of bags is required'),
   selling_price_per_unit: yup.number().positive('Price must be positive').required('Selling price is required'),
   amount_paid: yup.number().positive('Amount must be positive').required('Expected amount is required'),
-  payment_method_sale: yup.string(),
   comment: yup.string().required('Comment is required'),
   delivery_method: yup.string().required('Delivery method is required'),
+  payment_method_sale: yup.string().required('Payment method is required'),
   deposited_amount: yup.number().min(0, 'Amount must be positive'),
   cheque_paid: yup.number().min(0, 'Amount must be positive'),
   small_comment: yup.string(),
@@ -51,23 +51,26 @@ export default function SaleForm({ onSuccess, editData, onCancel }: SaleFormProp
       driver_phone: editData.driver_phone,
       date_of_sale: editData.date_of_sale,
       quantity_sold: editData.quantity_sold,
-      number_of_bags: editData.number_of_bags || '',
+      number_of_bags: editData.number_of_bags,
       selling_price_per_unit: editData.selling_price_per_unit,
       amount_paid: editData.amount_paid,
-      payment_method_sale: editData.payment_method_sale || '',
       comment: editData.comment,
       delivery_method: editData.delivery_method,
+      payment_method_sale: editData.payment_method_sale,
       deposited_amount: editData.deposited_amount || 0,
       cheque_paid: editData.cheque_paid || 0,
       small_comment: editData.small_comment || '',
     } : {
       date_of_sale: format(new Date(), 'yyyy-MM-dd'),
+      number_of_bags: 0,
+      payment_method_sale: '',
       deposited_amount: 0,
       cheque_paid: 0,
     },
   });
 
   const quantity = watch('quantity_sold');
+  const numberOfBags = watch('number_of_bags');
   const pricePerUnit = watch('selling_price_per_unit');
   const salesRevenue = watch('cheque_paid');
   const laborPayment = watch('deposited_amount');
@@ -75,33 +78,43 @@ export default function SaleForm({ onSuccess, editData, onCancel }: SaleFormProp
   // Calculate total amount: cheque paid - deposited amount
   const totalAmount = (salesRevenue || 0) - (laborPayment || 0);
 
-  // Auto-calculate expected amount based on quantity and price (90kg = 1 unit)
+  // Auto-calculate number of bags from quantity (quantity ÷ 90)
   useEffect(() => {
-    if (quantity && pricePerUnit) {
-      const bags = quantity / 90; // 90 kg = 1 bag
-      const expectedAmount = bags * pricePerUnit; // bags × price per unit
-      setValue('amount_paid', Math.round(expectedAmount * 100) / 100); // Round to 2 decimal places
-    }
-  }, [quantity, pricePerUnit, setValue]);
-
-  // Auto-calculate number of bags based on quantity (1 bag = 90 kg)
-  useEffect(() => {
-    if (quantity) {
-      const bags = quantity / 90; // 1 bag = 90 kg
-      setValue('number_of_bags', Math.round(bags * 100) / 100); // Round to 2 decimal places
+    if (quantity && quantity > 0) {
+      const calculatedBags = quantity / 90; // quantity ÷ 90kg per bag
+      setValue('number_of_bags', Math.round(calculatedBags * 100) / 100); // Round to 2 decimal places
     }
   }, [quantity, setValue]);
 
+  // Auto-calculate expected amount based on number of bags and price per unit
+  useEffect(() => {
+    if (numberOfBags && pricePerUnit && numberOfBags > 0 && pricePerUnit > 0) {
+      const expectedAmount = numberOfBags * pricePerUnit; // bags × price per unit
+      setValue('amount_paid', Math.round(expectedAmount * 100) / 100); // Round to 2 decimal places
+    }
+  }, [numberOfBags, pricePerUnit, setValue]);
   const onSubmit = async (data: SaleFormData) => {
     if (!user) return;
 
     setLoading(true);
     try {
-      // Calculate the correct total amount received
-      const calculatedTotal = (data.quantity_sold || 0) * (data.selling_price_per_unit || 0);
+      // Ensure all required fields are properly formatted
+      const calculatedTotal = (Number(data.number_of_bags) || 0) * (Number(data.selling_price_per_unit) || 0);
       
-      const saleData = {
-        ...data,
+      const cleanedData = {
+        customer_name: data.customer_name?.trim() || '',
+        driver_phone: data.driver_phone?.trim() || '',
+        date_of_sale: data.date_of_sale || format(new Date(), 'yyyy-MM-dd'),
+        quantity_sold: Number(data.quantity_sold) || 0,
+        number_of_bags: Number(data.number_of_bags) || 0,
+        selling_price_per_unit: Number(data.selling_price_per_unit) || 0,
+        amount_paid: Number(data.amount_paid) || 0,
+        comment: data.comment?.trim() || '',
+        delivery_method: data.delivery_method?.trim() || '',
+        payment_method_sale: data.payment_method_sale?.trim() || '',
+        deposited_amount: data.deposited_amount ? Number(data.deposited_amount) : 0,
+        cheque_paid: data.cheque_paid ? Number(data.cheque_paid) : 0,
+        small_comment: data.small_comment?.trim() || null,
         total_amount_received: calculatedTotal,
         user_id: user.id,
       };
@@ -110,7 +123,7 @@ export default function SaleForm({ onSuccess, editData, onCancel }: SaleFormProp
       if (editData) {
         const { data: updateResult, error } = await supabase
           .from('sales')
-          .update(saleData)
+          .update(cleanedData)
           .eq('id', editData.id)
           .select()
           .single();
@@ -120,7 +133,7 @@ export default function SaleForm({ onSuccess, editData, onCancel }: SaleFormProp
       } else {
         const { data: insertResult, error } = await supabase
           .from('sales')
-          .insert([saleData])
+          .insert([cleanedData])
           .select()
           .single();
 
@@ -131,12 +144,40 @@ export default function SaleForm({ onSuccess, editData, onCancel }: SaleFormProp
       setLastSale(result);
       setShowReceipt(true);
       if (!editData) {
-        reset();
+        reset({
+          date_of_sale: format(new Date(), 'yyyy-MM-dd'),
+          customer_name: '',
+          driver_phone: '',
+          quantity_sold: 0,
+          number_of_bags: 0,
+          selling_price_per_unit: 0,
+          amount_paid: 0,
+          comment: '',
+          delivery_method: '',
+          payment_method_sale: '',
+          deposited_amount: 0,
+          cheque_paid: 0,
+          small_comment: '',
+        });
       }
       onSuccess?.();
     } catch (error) {
       console.error('Error saving sale:', error);
-      alert('Error saving sale. Please try again.');
+      console.error('Full error object:', error);
+      
+      let errorMessage = 'Error saving sale. Please try again.';
+      
+      if (error && typeof error === 'object') {
+        if ('message' in error) {
+          errorMessage = error.message;
+        } else if ('error' in error && error.error) {
+          errorMessage = error.error.message || error.error;
+        } else if ('details' in error) {
+          errorMessage = error.details;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -187,7 +228,7 @@ Generated on: ${format(new Date(), 'PPpp')}
   const shareReceipt = (method: 'whatsapp' | 'email' | 'sms') => {
     if (!lastSale) return;
 
-    const message = `MaizeBiz Sales Receipt\n\nDate: ${format(new Date(lastSale.date_of_sale), 'PPP')}\nCustomer: ${lastSale.customer_name}\nQuantity: ${lastSale.quantity_sold} kg${lastSale.number_of_bags ? `\nBags: ${lastSale.number_of_bags}` : ''}\nTotal: KES ${lastSale.total_amount_received}\nExpected: KES ${lastSale.amount_paid}\nDelivery: ${lastSale.delivery_method}${lastSale.small_comment ? `\nNote: ${lastSale.small_comment}` : ''}`;
+    const message = `MaizeBiz Sales Receipt\n\nDate: ${format(new Date(lastSale.date_of_sale), 'PPP')}\nCustomer: ${lastSale.customer_name}\nQuantity: ${lastSale.quantity_sold} kg\nTotal: KES ${lastSale.total_amount_received}\nExpected: KES ${lastSale.amount_paid}\nDelivery: ${lastSale.delivery_method}${lastSale.small_comment ? `\nNote: ${lastSale.small_comment}` : ''}`;
 
     switch (method) {
       case 'whatsapp':
@@ -229,14 +270,14 @@ Generated on: ${format(new Date(), 'PPpp')}
               {lastSale?.number_of_bags && (
                 <p className="flex items-center"><span className="font-semibold text-gray-700">Number of Bags:</span> <Package className="h-4 w-4 mx-2 text-gray-500" /> <span className="text-gray-900">{lastSale?.number_of_bags}</span></p>
               )}
+              {lastSale?.payment_method_sale && (
+                <p><span className="font-semibold text-gray-700">Payment Method:</span> <span className="text-gray-900">{lastSale?.payment_method_sale}</span></p>
+              )}
               <p><span className="font-semibold text-gray-700">Price per unit:</span> <span className="text-gray-900">KES {lastSale?.selling_price_per_unit}</span></p>
             </div>
             <div className="space-y-2">
               <p><span className="font-semibold text-gray-700">Total Amount:</span> <span className="text-green-600 font-bold">KES {lastSale?.total_amount_received}</span></p>
               <p><span className="font-semibold text-gray-700">Expected Amount:</span> <span className="text-blue-600 font-bold">KES {lastSale?.amount_paid}</span></p>
-              {lastSale?.payment_method_sale && (
-                <p><span className="font-semibold text-gray-700">Payment Method:</span> <span className="text-gray-900">{lastSale?.payment_method_sale}</span></p>
-              )}
               <p><span className="font-semibold text-gray-700">Delivery:</span> <span className="text-gray-900">{lastSale?.delivery_method}</span></p>
               <p><span className="font-semibold text-gray-700">Comment:</span> <span className="text-gray-900">{lastSale?.comment}</span></p>
               {lastSale?.deposited_amount > 0 && (
@@ -320,7 +361,9 @@ Generated on: ${format(new Date(), 'PPpp')}
             </label>
             <input
               type="text"
-              {...register('customer_name')}
+              {...register('customer_name', {
+                setValueAs: (value) => value || ''
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-green-300"
               placeholder="Enter customer name"
             />
@@ -335,7 +378,9 @@ Generated on: ${format(new Date(), 'PPpp')}
             </label>
             <input
               type="tel"
-              {...register('driver_phone')}
+              {...register('driver_phone', {
+                setValueAs: (value) => value || ''
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-green-300"
               placeholder="Enter driver phone number"
             />
@@ -365,9 +410,11 @@ Generated on: ${format(new Date(), 'PPpp')}
             <input
               type="number"
               step="0.01"
-              {...register('quantity_sold')}
+              {...register('quantity_sold', {
+                setValueAs: (value) => value ? parseFloat(value) : 0
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-green-300"
-              placeholder="Enter quantity"
+              placeholder="Enter quantity in kg"
             />
             {errors.quantity_sold && (
               <p className="mt-2 text-sm text-red-600 font-medium">{errors.quantity_sold.message}</p>
@@ -377,20 +424,23 @@ Generated on: ${format(new Date(), 'PPpp')}
           <div className="group">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Number of Bags
-              <span className="text-xs text-gray-500 ml-2">(Auto-calculated: 1 bag = 90kg)</span>
+              <span className="text-xs text-gray-500 ml-2">(Auto-calculated: quantity ÷ 90kg)</span>
             </label>
             <input
               type="number"
               step="0.01"
-              {...register('number_of_bags')}
-              className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 bg-purple-50/50 backdrop-blur-sm group-hover:border-purple-300"
-              placeholder="Auto-calculated based on quantity"
+              {...register('number_of_bags', {
+                setValueAs: (value) => value ? parseFloat(value) : 0
+              })}
+              className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-blue-50/50 backdrop-blur-sm group-hover:border-blue-300"
+              placeholder="Auto-calculated from quantity"
               readOnly
             />
             {errors.number_of_bags && (
               <p className="mt-2 text-sm text-red-600 font-medium">{errors.number_of_bags.message}</p>
             )}
           </div>
+
 
           <div className="group">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -399,7 +449,9 @@ Generated on: ${format(new Date(), 'PPpp')}
             <input
               type="number"
               step="0.01"
-              {...register('selling_price_per_unit')}
+              {...register('selling_price_per_unit', {
+                setValueAs: (value) => value ? parseFloat(value) : 0
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-green-300"
               placeholder="Enter selling price"
             />
@@ -416,7 +468,9 @@ Generated on: ${format(new Date(), 'PPpp')}
             <input
               type="number"
               step="0.01"
-              {...register('amount_paid')}
+              {...register('amount_paid', {
+                setValueAs: (value) => value ? parseFloat(value) : 0
+              })}
               className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-blue-50/50 backdrop-blur-sm group-hover:border-blue-300"
               placeholder="Auto-calculated: bags × price per unit"
               readOnly
@@ -431,18 +485,22 @@ Generated on: ${format(new Date(), 'PPpp')}
               Payment Method
             </label>
             <select
-              {...register('payment_method_sale')}
+              {...register('payment_method_sale', {
+                setValueAs: (value) => value || ''
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-green-300"
             >
-              <option value="">Select payment method (optional)</option>
+              <option value="">Select payment method</option>
               <option value="Cash">Cash</option>
               <option value="M-Pesa">M-Pesa</option>
               <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Cheque">Cheque</option>
             </select>
             {errors.payment_method_sale && (
               <p className="mt-2 text-sm text-red-600 font-medium">{errors.payment_method_sale.message}</p>
             )}
           </div>
+
 
           <div className="group">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -452,7 +510,9 @@ Generated on: ${format(new Date(), 'PPpp')}
             <input
               type="number"
               step="0.01"
-              {...register('deposited_amount')}
+              {...register('deposited_amount', {
+                setValueAs: (value) => value ? parseFloat(value) : 0
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-green-300"
               placeholder="Enter labor payment amount (optional)"
             />
@@ -469,7 +529,9 @@ Generated on: ${format(new Date(), 'PPpp')}
             <input
               type="number"
               step="0.01"
-              {...register('cheque_paid')}
+              {...register('cheque_paid', {
+                setValueAs: (value) => value ? parseFloat(value) : 0
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-green-300"
               placeholder="Enter sales revenue amount (optional)"
             />
@@ -483,7 +545,9 @@ Generated on: ${format(new Date(), 'PPpp')}
               Comment
             </label>
             <select
-              {...register('comment')}
+              {...register('comment', {
+                setValueAs: (value) => value || ''
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-green-300"
             >
               <option value="">Select comment</option>
@@ -501,7 +565,9 @@ Generated on: ${format(new Date(), 'PPpp')}
               Delivery Method
             </label>
             <select
-              {...register('delivery_method')}
+              {...register('delivery_method', {
+                setValueAs: (value) => value || ''
+              })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-green-300"
             >
               <option value="">Select delivery method</option>
@@ -518,7 +584,9 @@ Generated on: ${format(new Date(), 'PPpp')}
               Additional Comment
             </label>
             <textarea
-              {...register('small_comment')}
+              {...register('small_comment', {
+                setValueAs: (value) => value || ''
+              })}
               rows={3}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white/50 backdrop-blur-sm group-hover:border-green-300 resize-none"
               placeholder="Enter additional comments (optional)"

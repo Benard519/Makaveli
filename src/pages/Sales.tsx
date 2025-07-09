@@ -87,6 +87,7 @@ export default function Sales() {
   const totalLaborPayment = sales.reduce((sum, s) => sum + (s.deposited_amount || 0), 0);
   const totalSalesRevenue = sales.reduce((sum, s) => sum + (s.cheque_paid || 0), 0);
   const totalBags = sales.reduce((sum, s) => sum + (s.number_of_bags || 0), 0);
+  const netSales = totalSalesRevenue - totalLaborPayment;
 
   if (loading) {
     return (
@@ -123,7 +124,7 @@ export default function Sales() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4 lg:gap-6">
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-6 border border-white/20 card-hover">
           <div className="flex items-center">
             <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-2xl shadow-lg">
@@ -186,8 +187,8 @@ export default function Sales() {
 
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-6 border border-white/20 card-hover">
           <div className="flex items-center">
-            <div className="bg-gradient-to-br from-pink-500 to-pink-600 p-4 rounded-2xl shadow-lg">
-              <Calendar className="h-6 w-6 text-white" />
+            <div className="bg-gradient-to-br from-teal-500 to-teal-600 p-4 rounded-2xl shadow-lg">
+              <Package className="h-6 w-6 text-white" />
             </div>
             <div className="ml-4 min-w-0 flex-1">
               <p className="text-xs lg:text-sm font-semibold text-gray-500 truncate">Total Bags</p>
@@ -198,12 +199,14 @@ export default function Sales() {
 
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-6 border border-white/20 card-hover">
           <div className="flex items-center">
-            <div className="bg-gradient-to-br from-teal-500 to-teal-600 p-4 rounded-2xl shadow-lg">
+            <div className={`bg-gradient-to-br ${netSales >= 0 ? 'from-emerald-500 to-emerald-600' : 'from-red-500 to-red-600'} p-4 rounded-2xl shadow-lg`}>
               <TrendingUp className="h-6 w-6 text-white" />
             </div>
             <div className="ml-4 min-w-0 flex-1">
-              <p className="text-xs lg:text-sm font-semibold text-gray-500 truncate">Total Records</p>
-              <p className="text-lg lg:text-xl font-bold text-gray-900 break-words">{sales.length}</p>
+              <p className="text-xs lg:text-sm font-semibold text-gray-500 truncate">Net Sales</p>
+              <p className={`text-lg lg:text-xl font-bold break-words ${netSales >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                KES {netSales >= 0 ? '+' : ''}{netSales.toLocaleString()}
+              </p>
             </div>
           </div>
         </div>
@@ -226,7 +229,7 @@ export default function Sales() {
           <Search className="h-5 w-5 absolute left-4 top-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search sales by customer name, phone, delivery method, payment method, or comments..."
+            placeholder="Search sales by customer name, phone, delivery method, or comments..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-500 transition-all duration-300 bg-white/50 backdrop-blur-sm"
@@ -263,10 +266,10 @@ export default function Sales() {
                     Driver Phone
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Quantity
+                    Bags
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Bags
+                    Quantity
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Price/Unit
@@ -316,17 +319,13 @@ export default function Sales() {
                       {sale.driver_phone}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {sale.quantity_sold.toLocaleString()} kg
+                      <div className="flex items-center">
+                        <Package className="h-4 w-4 text-gray-400 mr-2" />
+                        <span className="font-medium">{sale.number_of_bags || 0}</span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {sale.number_of_bags ? (
-                        <div className="flex items-center">
-                          <Package className="h-4 w-4 text-gray-400 mr-2" />
-                          <span>{sale.number_of_bags}</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
+                      {sale.quantity_sold.toLocaleString()} kg
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       KES {sale.selling_price_per_unit.toLocaleString()}
@@ -337,12 +336,13 @@ export default function Sales() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
                       KES {sale.amount_paid.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {sale.payment_method_sale ? (
                         <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                          sale.payment_method_sale === 'Cash' ? 'bg-green-100 text-green-800' : 
+                          sale.payment_method_sale === 'Cash' ? 'bg-green-100 text-green-800' :
                           sale.payment_method_sale === 'M-Pesa' ? 'bg-blue-100 text-blue-800' :
-                          'bg-purple-100 text-purple-800'
+                          sale.payment_method_sale === 'Cheque' ? 'bg-purple-100 text-purple-800' :
+                          'bg-gray-100 text-gray-800'
                         }`}>
                           {sale.payment_method_sale}
                         </span>
