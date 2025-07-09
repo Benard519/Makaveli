@@ -199,11 +199,11 @@ Driver Phone: ${lastSale.driver_phone}
 
 SALE DETAILS:
 Quantity: ${lastSale.quantity_sold} kg
-${lastSale.number_of_bags ? `Number of Bags: ${lastSale.number_of_bags}` : ''}
+Number of Bags: ${lastSale.number_of_bags || 0}
 Price per unit: KES ${lastSale.selling_price_per_unit}
 Total Amount: KES ${lastSale.total_amount_received}
 Expected Amount: KES ${lastSale.amount_paid}
-${lastSale.payment_method_sale ? `Payment Method: ${lastSale.payment_method_sale}` : ''}
+Payment Method: ${lastSale.payment_method_sale || 'Not specified'}
 Delivery Method: ${lastSale.delivery_method}
 Comment: ${lastSale.comment}
 
@@ -228,7 +228,7 @@ Generated on: ${format(new Date(), 'PPpp')}
   const shareReceipt = (method: 'whatsapp' | 'email' | 'sms') => {
     if (!lastSale) return;
 
-    const message = `MaizeBiz Sales Receipt\n\nDate: ${format(new Date(lastSale.date_of_sale), 'PPP')}\nCustomer: ${lastSale.customer_name}\nQuantity: ${lastSale.quantity_sold} kg\nTotal: KES ${lastSale.total_amount_received}\nExpected: KES ${lastSale.amount_paid}\nDelivery: ${lastSale.delivery_method}${lastSale.small_comment ? `\nNote: ${lastSale.small_comment}` : ''}`;
+    const message = `MaizeBiz Sales Receipt\n\nDate: ${format(new Date(lastSale.date_of_sale), 'PPP')}\nCustomer: ${lastSale.customer_name}\nQuantity: ${lastSale.quantity_sold} kg\nBags: ${lastSale.number_of_bags || 0}\nTotal: KES ${lastSale.total_amount_received}\nExpected: KES ${lastSale.amount_paid}\nPayment: ${lastSale.payment_method_sale || 'N/A'}\nDelivery: ${lastSale.delivery_method}${lastSale.small_comment ? `\nNote: ${lastSale.small_comment}` : ''}`;
 
     switch (method) {
       case 'whatsapp':

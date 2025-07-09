@@ -124,7 +124,7 @@ export default function Sales() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 lg:gap-6">
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-6 border border-white/20 card-hover">
           <div className="flex items-center">
             <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-2xl shadow-lg">
@@ -197,7 +197,7 @@ export default function Sales() {
           </div>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-6 border border-white/20 card-hover">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-6 border border-white/20 card-hover sm:col-span-2 lg:col-span-3 xl:col-span-4 2xl:col-span-6">
           <div className="flex items-center">
             <div className={`bg-gradient-to-br ${netSales >= 0 ? 'from-emerald-500 to-emerald-600' : 'from-red-500 to-red-600'} p-4 rounded-2xl shadow-lg`}>
               <TrendingUp className="h-6 w-6 text-white" />

@@ -69,14 +69,14 @@ export default function PurchaseForm({ onSuccess, editData, onCancel }: Purchase
       // Ensure all required fields are properly formatted
       const cleanedData = {
         supplier_name: data.supplier_name?.trim() || '',
-        location_of_origin: data.location_of_origin?.trim() || null,
+        location_of_origin: data.location_of_origin?.trim() || '',
         date_of_purchase: data.date_of_purchase || format(new Date(), 'yyyy-MM-dd'),
         quantity_bought: Number(data.quantity_bought) || 0,
         price_per_unit: Number(data.price_per_unit) || 0,
         payment_method: data.payment_method?.trim() || '',
-        truck_number_plate: data.truck_number_plate?.trim() || null,
-        origin_weight: data.origin_weight ? Number(data.origin_weight) : null,
-        destination_weight: data.destination_weight ? Number(data.destination_weight) : null,
+        truck_number_plate: data.truck_number_plate?.trim() || '',
+        origin_weight: data.origin_weight ? Number(data.origin_weight) : 0,
+        destination_weight: data.destination_weight ? Number(data.destination_weight) : 0,
         total_amount_paid: totalAmount,
         user_id: user.id,
       };
