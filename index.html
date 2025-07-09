@@ -28,15 +28,96 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
             .then((registration) => {
               console.log('SW registered: ', registration);
+              
+              // Handle service worker updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                  newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      // New service worker is available, prompt user to refresh
+                      if (confirm('New version available! Refresh to update?')) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        window.location.reload();
+                      }
+                    }
+                  });
+                }
+              });
             })
             .catch((registrationError) => {
               console.log('SW registration failed: ', registrationError);
             });
         });
+        
+        // Listen for service worker messages
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'SW_UPDATED') {
+            window.location.reload();
+          }
+        });
       }
+      
+      // Prevent white screen on PWA launch
+      window.addEventListener('DOMContentLoaded', () => {
+        // Add a timeout to detect if the app is stuck loading
+        setTimeout(() => {
+          const root = document.getElementById('root');
+          if (root && root.children.length === 0) {
+            // If root is empty after 5 seconds, show error message
+            root.innerHTML = `
+              <div style="
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+                font-family: system-ui, -apple-system, sans-serif;
+                padding: 20px;
+                text-align: center;
+              ">
+                <div style="
+                  width: 80px;
+                  height: 80px;
+                  border-radius: 20px;
+                  background: white;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  margin-bottom: 20px;
+                  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                ">
+                  <img src="/WhatsApp Image 2025-07-06 at 11.37.25 PM.jpeg" 
+                       alt="HIMAZAKE" 
+                       style="width: 100%; height: 100%; object-fit: cover; border-radius: 20px;" />
+                </div>
+                <h1 style="color: #065f46; margin-bottom: 10px; font-size: 24px; font-weight: bold;">
+                  HIMAZAKE
+                </h1>
+                <p style="color: #6b7280; margin-bottom: 30px;">
+                  Loading your agricultural business platform...
+                </p>
+                <button onclick="window.location.reload()" style="
+                  background: linear-gradient(135deg, #10b981, #059669);
+                  color: white;
+                  border: none;
+                  padding: 12px 24px;
+                  border-radius: 12px;
+                  font-weight: 600;
+                  cursor: pointer;
+                  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                ">
+                  Refresh App
+                </button>
+              </div>
+            `;
+          }
+        }, 5000);
+      });
     </script>
   </body>
 </html>
