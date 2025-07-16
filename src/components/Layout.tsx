@@ -52,7 +52,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-green-800 bg-clip-text text-transparent">
-              MaizeBiz
+              HIMAZAKE
             </span>
           </div>
           <div className="flex items-center space-x-2">
